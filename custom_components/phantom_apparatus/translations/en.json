@@ -1,0 +1,22 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "description": "Configure The Phantom Apparatus to unify your TV and media apps.",
+                "data": {
+                    "name": "Name",
+                    "tv_entity": "TV Entity",
+                    "jellyfin_entity": "Jellyfin Entity",
+                    "ghosttube_entity": "GhostTube Entity"
+                }
+            }
+        },
+        "error": {
+            "entity_not_found": "Selected entity not found.",
+            "unknown": "Unknown error occurred."
+        },
+        "abort": {
+            "already_configured": "This entry is already configured."
+        }
+    }
+}
