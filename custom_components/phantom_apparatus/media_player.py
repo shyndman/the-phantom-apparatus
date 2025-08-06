@@ -7,6 +7,8 @@ from typing import TYPE_CHECKING, Any
 from homeassistant.components.media_player import (
     MediaPlayerDeviceClass,
     MediaPlayerEntity,
+)
+from homeassistant.components.media_player.const import (
     MediaPlayerEntityFeature,
     MediaPlayerState,
     MediaType,
@@ -105,7 +107,7 @@ class PhantomApparatusMediaPlayer(PhantomApparatusEntity, MediaPlayerEntity):
 
         if current_source == "Jellyfin":
             return self.coordinator.data.get("jellyfin_attributes", {})
-        if current_source == "Ghost Tube":
+        if current_source == "GhostTube":
             return self.coordinator.data.get("ghosttube_attributes", {})
         return None
 
@@ -119,7 +121,7 @@ class PhantomApparatusMediaPlayer(PhantomApparatusEntity, MediaPlayerEntity):
 
         if current_source == "Jellyfin":
             return self.coordinator.data.get("jellyfin_state")
-        if current_source == "Ghost Tube":
+        if current_source == "GhostTube":
             return self.coordinator.data.get("ghosttube_state")
         return None
 
@@ -181,7 +183,7 @@ class PhantomApparatusMediaPlayer(PhantomApparatusEntity, MediaPlayerEntity):
         current_source = tv_attrs.get("source")
 
         # Always include Jellyfin and Ghost Tube
-        sources = ["Jellyfin", "Ghost Tube"]
+        sources = ["Jellyfin", "GhostTube"]
 
         # If current source is something else, include it too
         if current_source and current_source not in sources:
@@ -409,7 +411,7 @@ class PhantomApparatusMediaPlayer(PhantomApparatusEntity, MediaPlayerEntity):
         target_entity = None
         if current_source == "Jellyfin":
             target_entity = self._jellyfin_entity_id
-        elif current_source == "Ghost Tube":
+        elif current_source == "GhostTube":
             target_entity = self._ghosttube_entity_id
 
         if target_entity:
