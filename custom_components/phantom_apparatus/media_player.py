@@ -176,9 +176,6 @@ class PhantomApparatusMediaPlayer(PhantomApparatusEntity, MediaPlayerEntity):
     @property
     def source_list(self) -> list[str] | None:
         """Return the list of available input sources."""
-        if not self.coordinator.data:
-            return None
-
         tv_attrs = self.coordinator.data.get("tv_attributes", {})
         current_source = tv_attrs.get("source")
 
