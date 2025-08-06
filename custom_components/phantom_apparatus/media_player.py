@@ -53,7 +53,7 @@ class PhantomApparatusMediaPlayer(PhantomApparatusEntity, MediaPlayerEntity):
         self._ghosttube_entity_id = entry.data.get("ghosttube_entity")
 
     @property
-    def supported_features(self) -> MediaPlayerEntityFeature:
+    def supported_features(self) -> MediaPlayerEntityFeature:  # noqa: PLR0912
         """Return supported features based on TV capabilities."""
         if not self.coordinator.data:
             return MediaPlayerEntityFeature(0)
@@ -333,7 +333,7 @@ class PhantomApparatusMediaPlayer(PhantomApparatusEntity, MediaPlayerEntity):
             blocking=True,
         )
 
-    async def async_mute_volume(self, mute: bool) -> None:
+    async def async_mute_volume(self, mute: bool) -> None:  # noqa: FBT001
         """Mute or unmute the volume."""
         await self.hass.services.async_call(
             "media_player",

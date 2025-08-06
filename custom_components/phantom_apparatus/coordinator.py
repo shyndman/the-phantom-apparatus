@@ -17,7 +17,7 @@ class PhantomApparatusDataUpdateCoordinator(DataUpdateCoordinator):
 
     config_entry: PhantomApparatusConfigEntry
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args, **kwargs) -> None:  # noqa: ANN002, ANN003
         """Initialize the coordinator."""
         super().__init__(*args, **kwargs)
         self._unsub_state_changed = None
