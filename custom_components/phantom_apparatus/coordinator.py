@@ -1,25 +1,54 @@
 """DataUpdateCoordinator for The Phantom Apparatus."""
 
+# ruff: noqa: TC002, TC003
+
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from collections.abc import Awaitable, Callable, Coroutine
+from datetime import timedelta
+from logging import Logger
+from typing import TYPE_CHECKING, Any, TypedDict, Unpack
 
-from homeassistant.core import Event, EventStateChangedData, callback
+from homeassistant.core import Event, EventStateChangedData, HomeAssistant, callback
+from homeassistant.helpers.debounce import Debouncer
 from homeassistant.helpers.event import async_track_state_change_event
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, _DataT
 
 if TYPE_CHECKING:
     from .data import PhantomApparatusConfigEntry
 
 
+class _CoordinatorInitKwargs(TypedDict, total=False):
+    """Subset of DataUpdateCoordinator keyword-only args we forward."""
+
+    update_interval: timedelta | None
+    update_method: Callable[[], Awaitable[_DataT]] | None
+    setup_method: Callable[[], Awaitable[None]] | None
+    request_refresh_debouncer: Debouncer[Coroutine[Any, Any, None]] | None
+    always_update: bool
+
+
 class PhantomApparatusDataUpdateCoordinator(DataUpdateCoordinator):
     """Class to manage fetching data from Home Assistant entities."""
 
-    config_entry: PhantomApparatusConfigEntry
-
-    def __init__(self, *args, **kwargs) -> None:  # noqa: ANN002, ANN003
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        logger: Logger,
+        *,
+        config_entry: PhantomApparatusConfigEntry,
+        name: str,
+        **kwargs: Unpack[_CoordinatorInitKwargs],
+    ) -> None:
         """Initialize the coordinator."""
-        super().__init__(*args, **kwargs)
+        super().__init__(
+            hass=hass,
+            logger=logger,
+            name=name,
+            config_entry=config_entry,
+            **kwargs,
+        )
+        self.config_entry = config_entry
         self._unsub_state_changed = None
 
     async def async_config_entry_first_refresh(self) -> None:

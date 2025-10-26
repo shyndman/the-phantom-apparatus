@@ -35,6 +35,7 @@ async def async_setup_entry(
         hass=hass,
         logger=LOGGER,
         name=DOMAIN,
+        config_entry=entry,
         # No update_interval needed - we use state change events
     )
     entry.runtime_data = PhantomApparatusData(

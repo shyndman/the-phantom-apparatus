@@ -6,7 +6,7 @@ import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.const import CONF_NAME
 from homeassistant.helpers import selector
-from slugify import slugify
+from homeassistant.util import slugify
 
 from .const import DOMAIN
 
