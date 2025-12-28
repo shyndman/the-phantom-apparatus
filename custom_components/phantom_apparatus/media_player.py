@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import base64
 import logging
+import re
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.media_player import (
@@ -352,6 +354,28 @@ class PhantomApparatusMediaPlayer(PhantomApparatusEntity, MediaPlayerEntity):
 
         _LOGGER.debug("media_image_url returning None (no artwork available)")
         return None
+
+    async def async_get_media_image(self) -> tuple[bytes | None, str | None]:
+        """Fetch media image, handling data URIs directly.
+
+        Home Assistant's default implementation tries to HTTP-fetch the URL returned
+        by media_image_url. Data URIs cause errors because HA prepends its base URL,
+        creating malformed URLs like "http://192.168.84.1:8123data:image/...".
+
+        This override decodes data URIs inline instead.
+        """
+        url = self.media_image_url
+        if url and url.startswith("data:"):
+            # Parse data URI: data:[<mediatype>][;base64],<data>
+            match = re.match(r"data:([^;,]+)?(?:;base64)?,(.+)", url)
+            if match:
+                mime_type = match.group(1) or "application/octet-stream"
+                data = base64.b64decode(match.group(2))
+                return data, mime_type
+            return None, None
+
+        # Fall back to parent implementation for regular URLs
+        return await super().async_get_media_image()
 
     @property
     def media_artist(self) -> str | None:
