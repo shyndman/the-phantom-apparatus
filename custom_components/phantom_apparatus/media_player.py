@@ -8,6 +8,7 @@ import re
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.media_player import (
+    BrowseMedia,
     MediaPlayerDeviceClass,
     MediaPlayerEntity,
 )
@@ -16,6 +17,7 @@ from homeassistant.components.media_player.const import (
     MediaPlayerState,
     MediaType,
 )
+from homeassistant.components.media_player.errors import BrowseError
 from homeassistant.core import HomeAssistant, callback
 
 from .const import GHOSTTUBE_IDLE_IMAGE_DATA_URI, JELLYFIN_IDLE_IMAGE_DATA_URI
@@ -108,13 +110,15 @@ class PhantomApparatusMediaPlayer(PhantomApparatusEntity, MediaPlayerEntity):
         if tv_features & MediaPlayerEntityFeature.PREVIOUS_TRACK:
             features |= MediaPlayerEntityFeature.PREVIOUS_TRACK
 
-        # Add seek feature if active app supports it
+        # Add features from active app if supported
         active_app_attrs = self._get_active_app_attributes()
         app_features = 0
         if active_app_attrs:
             app_features = active_app_attrs.get("supported_features", 0)
             if app_features & MediaPlayerEntityFeature.SEEK:
                 features |= MediaPlayerEntityFeature.SEEK
+            if app_features & MediaPlayerEntityFeature.BROWSE_MEDIA:
+                features |= MediaPlayerEntityFeature.BROWSE_MEDIA
         _LOGGER.debug(
             "supported_features returning %s (tv_features=%s app_features=%s)",
             features,
@@ -356,7 +360,8 @@ class PhantomApparatusMediaPlayer(PhantomApparatusEntity, MediaPlayerEntity):
         return None
 
     async def async_get_media_image(self) -> tuple[bytes | None, str | None]:
-        """Fetch media image, handling data URIs directly.
+        """
+        Fetch media image, handling data URIs directly.
 
         Home Assistant's default implementation tries to HTTP-fetch the URL returned
         by media_image_url. Data URIs cause errors because HA prepends its base URL,
@@ -577,21 +582,24 @@ class PhantomApparatusMediaPlayer(PhantomApparatusEntity, MediaPlayerEntity):
             blocking=True,
         )
 
-    async def async_media_seek(self, position: float) -> None:
-        """Send seek command to active app."""
-        # Determine which app is active
-        tv_attrs = (
-            self.coordinator.data.get("tv_attributes", {})
-            if self.coordinator.data
-            else {}
-        )
+    def _get_active_app_entity_id(self) -> str | None:
+        """Get the entity ID of the currently active app."""
+        if not self.coordinator.data:
+            return None
+
+        tv_attrs = self.coordinator.data.get("tv_attributes", {})
         current_source = tv_attrs.get("source")
 
-        target_entity = None
         if current_source == "Jellyfin":
-            target_entity = self._jellyfin_entity_id
-        elif current_source == "GhostTube":
-            target_entity = self._ghosttube_entity_id
+            return self._jellyfin_entity_id
+        if current_source == "GhostTube":
+            return self._ghosttube_entity_id
+        return None
+
+    async def async_media_seek(self, position: float) -> None:
+        """Send seek command to active app."""
+        target_entity = self._get_active_app_entity_id()
+        current_source = self.source
 
         _LOGGER.debug(
             "async_media_seek called; position=%s current_source=%s target_entity=%s",
@@ -612,6 +620,43 @@ class PhantomApparatusMediaPlayer(PhantomApparatusEntity, MediaPlayerEntity):
                 "async_media_seek skipped; no target entity available for source %s",
                 current_source,
             )
+
+    async def async_browse_media(
+        self,
+        media_content_type: MediaType | str | None = None,
+        media_content_id: str | None = None,
+    ) -> BrowseMedia:
+        """Browse media from the active app."""
+        target_entity = self._get_active_app_entity_id()
+        current_source = self.source
+
+        _LOGGER.debug(
+            "async_browse_media called; content_type=%s content_id=%s "
+            "current_source=%s target_entity=%s",
+            media_content_type,
+            media_content_id,
+            current_source,
+            target_entity,
+        )
+
+        if not target_entity:
+            msg = f"No browse media available for source: {current_source}"
+            raise BrowseError(msg)
+
+        response = await self.hass.services.async_call(
+            "media_player",
+            "browse_media",
+            {
+                "entity_id": target_entity,
+                "media_content_type": media_content_type,
+                "media_content_id": media_content_id,
+            },
+            blocking=True,
+            return_response=True,
+        )
+
+        # The service returns a dict that we need to convert to BrowseMedia
+        return BrowseMedia(**response[target_entity])
 
     @callback
     def _handle_coordinator_update(self) -> None:
