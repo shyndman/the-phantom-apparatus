@@ -643,14 +643,16 @@ class PhantomApparatusMediaPlayer(PhantomApparatusEntity, MediaPlayerEntity):
             msg = f"No browse media available for source: {current_source}"
             raise BrowseError(msg)
 
+        payload: dict[str, Any] = {"entity_id": target_entity}
+        if media_content_type is not None:
+            payload["media_content_type"] = media_content_type
+        if media_content_id is not None:
+            payload["media_content_id"] = media_content_id
+
         response = await self.hass.services.async_call(
             "media_player",
             "browse_media",
-            {
-                "entity_id": target_entity,
-                "media_content_type": media_content_type,
-                "media_content_id": media_content_id,
-            },
+            payload,
             blocking=True,
             return_response=True,
         )
