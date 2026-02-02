@@ -657,8 +657,16 @@ class PhantomApparatusMediaPlayer(PhantomApparatusEntity, MediaPlayerEntity):
             return_response=True,
         )
 
-        # The service returns a dict that we need to convert to BrowseMedia
-        return BrowseMedia(**response[target_entity])
+        result = response.get(target_entity) if response else None
+        if isinstance(result, BrowseMedia):
+            return result
+        if isinstance(result, dict):
+            return BrowseMedia(**result)
+        msg = "Unsupported browse_media response: %s for entity %s" % (
+            type(result),
+            target_entity,
+        )
+        raise BrowseError(msg)
 
     @callback
     def _handle_coordinator_update(self) -> None:
